@@ -9,27 +9,51 @@ export default function ArticleEditor({ id, onChange }) {
   }, [id]);
 
   const getArticle = async (id) => {
+    // *** code fetch article avec id
+    if (id === 0) {
+      dispatch({
+        type: "INIT",
+        payload: {
+          designation: "",
+          prix: 0,
+          qte_stock: 0,
+        },
+      });
+      return;
+    }
+    const res = await fetch("http://localhost:4000/articles/" + id, {
+      method: "get",
+      mode: "cors",
+      config: { headers: { "Access-Control-Allow-Origin": "*" } },
+      responseType: "text",
+    }).then((res) => res.json());
+    console.log(res);
     dispatch({
       type: "INIT",
-      payload: {
-        designation: "",
-        prix: 0,
-        qte_stock: 0,
-      },
+      payload: res.data,
     });
   };
 
   const handleSave = async () => {
     console.log(state);
-    let ff = new FormData();
-    ff.set("designation", state.designation);
-    ff.set("prix", state.prix);
-    ff.set("qte_stock", state.qte_stock);
+    const article = {
+      id: state.id,
+      designation: state.designation,
+      prix: state.prix,
+      qte_stock: state.qte_stock,
+    };
     const res = await fetch("http://localhost:4000/articles/", {
-      method: "post",
+      method: state.id === 0 ? "post" : "put",
       mode: "cors",
-      config: { headers: { "Access-Control-Allow-Origin": "*" } },
-      body: ff,
+      config: {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(article),
     }).then((res) => res.json());
     if (!res.success) {
       alert(res.message);

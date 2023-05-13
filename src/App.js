@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Articles from './pages/articles';
-import ArticleEditor from './pages/ArticleEditor';
+import Clients from './pages/Clients';
 import './App.css';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -14,10 +14,10 @@ function App() {
     <div className="App">
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <button onClick={_ => setPage('AllArticles')}>Articles</button>
-        <button onClick={_ => setPage('ArticleEditor')}>Editeur</button>
+        <button onClick={_ => setPage('ArticleEdClientsitor')}>Clients</button>
       </div>
       {page === 'AllArticles' && <Articles />}
-      {page === 'ArticleEditor' && <ArticleEditor />}
+      {page === 'Clients' && <Clients />}
     </div>
   );
 }

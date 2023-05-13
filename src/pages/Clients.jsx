@@ -10,13 +10,10 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
 import Dlg from "../components/Dlg";
-import ArticleEditor from "./ArticleEditor";
 
-export default function Articles() {
+export default function Clients() {
   const [data, setData] = useState([]);
-  const [currentId, setCurrentId] = useState(0);
   const [openDlg, setOpenDlg] = useState(false);
 
   useEffect(() => {
@@ -24,7 +21,7 @@ export default function Articles() {
   }, []);
 
   const getData = async (_) => {
-    const res = await fetch("http://localhost:4000/articles/", {
+    const res = await fetch("http://localhost:4000/clients/", {
       method: "get",
       mode: "cors",
       config: { headers: { "Access-Control-Allow-Origin": "*" } },
@@ -33,23 +30,13 @@ export default function Articles() {
     console.log(res);
     setData(res.data);
   };
-
-  const showEdit = (row) => {
-    console.log(row);
-    setCurrentId(row.id);
-    setOpenDlg(true);
-  };
-
   return (
     <div>
-      <h3>Liste des articles</h3>
+      <h3>Liste des clients</h3>
       <IconButton
         color="secondary"
         aria-label="add"
-        onClick={(_) => {
-          setCurrentId(0);
-          setOpenDlg(true);
-        }}
+        onClick={(_) => setOpenDlg(true)}
       >
         <AddIcon />
       </IconButton>
@@ -58,10 +45,8 @@ export default function Articles() {
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
-              <TableCell>Désignation</TableCell>
-              <TableCell align="right">Prix</TableCell>
-              <TableCell align="right">Qté</TableCell>
-              <TableCell align="right"></TableCell>
+              <TableCell>Nom</TableCell>
+              <TableCell align="right">Solde</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -73,18 +58,8 @@ export default function Articles() {
                 <TableCell component="th" scope="row">
                   {row.id}
                 </TableCell>
-                <TableCell>{row.designation}</TableCell>
-                <TableCell align="right">{row.prix}</TableCell>
-                <TableCell align="right">{row.qte_stock}</TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    color="primary"
-                    aria-label="edit"
-                    onClick={(_) => showEdit(row)}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </TableCell>
+                <TableCell>{row.nom}</TableCell>
+                <TableCell align="right">{row.solde}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -92,15 +67,11 @@ export default function Articles() {
       </TableContainer>
 
       {openDlg && (
-        <Dlg title="test" open={openDlg} onClose={(_) => setOpenDlg(false)}>
-          <ArticleEditor
-            id={currentId}
-            onChange={(_) => {
-              setOpenDlg(false);
-              getData();
-            }}
-          />
-        </Dlg>
+        <Dlg
+          title="test"
+          open={openDlg}
+          onClose={(_) => setOpenDlg(false)}
+        ></Dlg>
       )}
     </div>
   );
