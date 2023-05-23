@@ -14,6 +14,7 @@ export default function ArticleEditor({ id, onChange }) {
       dispatch({
         type: "INIT",
         payload: {
+          id: 0,
           designation: "",
           prix: 0,
           qte_stock: 0,

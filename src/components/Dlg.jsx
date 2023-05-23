@@ -4,7 +4,13 @@ import DialogContent from "@mui/material/DialogContent";
 import CloseIcon from "@mui/icons-material/Close";
 import { AppBar, IconButton, Toolbar, Typography } from "@mui/material";
 
-export default function FormDialog({ title, open, onClose, children }) {
+export default function FormDialog({
+  title,
+  open,
+  onClose,
+  children,
+  fullScreen,
+}) {
   const [openDlg, setOpenDlg] = React.useState(open);
 
   const handleClose = () => {
@@ -14,7 +20,7 @@ export default function FormDialog({ title, open, onClose, children }) {
 
   return (
     <div>
-      <Dialog open={openDlg} onClose={handleClose}>
+      <Dialog fullScreen={fullScreen} open={openDlg} onClose={handleClose}>
         <AppBar sx={{ position: "relative" }}>
           <Toolbar>
             <IconButton
