@@ -1,4 +1,11 @@
-import { Grid, Paper, Stack, TextField } from "@mui/material";
+import {
+  Divider,
+  Grid,
+  IconButton,
+  Paper,
+  Stack,
+  TextField,
+} from "@mui/material";
 import React, { useEffect, useReducer, useRef, useState } from "react";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -6,12 +13,16 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import PeopleIcon from "@mui/icons-material/People";
+import SaveIcon from "@mui/icons-material/Save";
 import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
+import Dlg from "../components/Dlg";
+import Clients from "../pages/Clients";
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
@@ -21,18 +32,23 @@ const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
-export default function FActureEditor() {
+export default function FActureEditor({ idFacture }) {
   const [state, dispatch] = useReducer(reducer, {
     lines: [],
+    id: 0,
   });
   const [article, setArticle] = useState(null);
   const [qte, setQte] = useState(1);
   const [articles, setArticles] = useState([]);
+  const [openClientChooser, setOpenClientChooser] = useState(false);
   const qteRef = useRef();
 
   useEffect(() => {
     getData();
-  }, []);
+    if (idFacture) {
+      loadFacture(idFacture);
+    }
+  }, [idFacture]);
 
   const getData = async (_) => {
     const res = await fetch("http://localhost:4000/articles/", {
@@ -42,6 +58,24 @@ export default function FActureEditor() {
       responseType: "text",
     }).then((res) => res.json());
     setArticles(res.data);
+  };
+
+  const loadFacture = async (id) => {
+    const res = await fetch("http://localhost:4000/factures/" + id, {
+      method: "get",
+      mode: "cors",
+      config: { headers: { "Access-Control-Allow-Origin": "*" } },
+      responseType: "text",
+    }).then((res) => res.json());
+    if (res.success) {
+      dispatch({
+        type: "INIT",
+        payload: {
+          ...res.data,
+          lines: res.data.lines.map((e) => ({ ...e, type: "OLD" })),
+        },
+      });
+    }
   };
 
   const handleChange = (event) => {
@@ -59,47 +93,81 @@ export default function FActureEditor() {
     setQte(1);
   };
 
+  const selectClient = (client) => {
+    console.log(client);
+    setOpenClientChooser(false);
+    dispatch({ type: "SELECT_CLIENT", payload: client });
+  };
+
+  const handleSave = async (_) => {
+    const commande = {
+      id: state.id,
+      id_client: state.client.id,
+      lignes: state.lines,
+    };
+    console.log(commande);
+    const res = await fetch("http://localhost:4000/factures/", {
+      method: state.id === 0 ? "post" : "put",
+      mode: "cors",
+      config: {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(commande),
+    }).then((res) => res.json());
+    if (!res.success) {
+      alert(res.message);
+      return;
+    }
+    let id = idFacture || res.insertId;
+    loadFacture(id);
+  };
+
   return (
     <div
       style={{
         width: "100%",
         minHeight: "70%",
         padding: 10,
-        border: "1px solid red",
       }}
     >
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={12} md={8} style={{ border: "1px solid blue" }}>
+        <Grid item xs={12} sm={12} md={8}>
           <Stack spacing={2}>
             <Item style={{ minWidth: 350 }}>
               <Stack direction="row" spacing={2}>
-                <Item>
-                  <Box sx={{ minWidth: 320 }}>
-                    <FormControl fullWidth>
-                      <InputLabel id="demo-simple-select-label">
-                        Article
-                      </InputLabel>
-                      <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={article}
-                        label={article ? article.designation : ""}
-                        onChange={handleChange}
-                      >
-                        {articles.map((a) => (
-                          <MenuItem key={a.id} value={a}>
-                            {a.designation}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-                </Item>
-                <Item style={{ minWidth: 150 }}>
+                <Box sx={{ minWidth: 320, mt: 1 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="demo-simple-select-label">
+                      Article
+                    </InputLabel>
+                    <Select
+                      labelId="demo-simple-select-label"
+                      margin="dense"
+                      size="small"
+                      value={article}
+                      label={article ? article.designation : ""}
+                      onChange={handleChange}
+                    >
+                      {articles.map((a) => (
+                        <MenuItem key={a.id} value={a}>
+                          {a.designation}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box style={{ minWidth: 150 }}>
                   <TextField
                     label="Qté"
                     inputRef={qteRef}
                     type="number"
+                    margin="dense"
+                    size="small"
                     value={qte}
                     disabled={!article}
                     onKeyPress={(e) => {
@@ -110,7 +178,7 @@ export default function FActureEditor() {
                     onChange={(e) => setQte(e.target.value)}
                     sx={{ m: 1, width: "25ch" }}
                   />
-                </Item>
+                </Box>
               </Stack>
             </Item>
             <Item>
@@ -137,23 +205,86 @@ export default function FActureEditor() {
                         </TableCell>
                         <TableCell align="right">{row.qte}</TableCell>
                         <TableCell align="right">{row.prix}</TableCell>
-                        <TableCell align="right">***.***</TableCell>
+                        <TableCell align="right">
+                          {Number(row.qte) * Number(row.prix)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
             </Item>
-            <Item>Ligne Total</Item>
+            <Item>
+              <div
+                style={{ width: "100%", textAlign: "right", paddingRight: 50 }}
+              >
+                TOTAL :{" "}
+                <b style={{ color: "red" }}>
+                  {state.lines.reduce(
+                    (acc, e) => acc + Number(e.qte) * Number(e.prix),
+                    0
+                  )}
+                </b>
+              </div>
+            </Item>
           </Stack>
         </Grid>
-        <Grid item xs={12} sm={12} md={4} style={{ border: "1px solid green" }}>
+        <Grid item xs={12} sm={12} md={4}>
           <Stack spacing={2}>
-            <Item>Ecran Total</Item>
-            <Item>Client</Item>
+            <Item>
+              <div style={{ width: "100%", textAlign: "center" }}>
+                <b style={{ color: "green" }}>
+                  {state.lines.reduce(
+                    (acc, e) => acc + Number(e.qte) * Number(e.prix),
+                    0
+                  )}
+                </b>
+              </div>
+              <Divider />
+              <div style={{ width: "100%", textAlign: "center" }}>
+                <IconButton
+                  aria-label="save"
+                  disabled={
+                    !state ||
+                    !state.changed ||
+                    !state.client ||
+                    state.lines.length === 0
+                  }
+                  onClick={handleSave}
+                  color="primary"
+                >
+                  <SaveIcon />
+                </IconButton>
+              </div>
+            </Item>
+            <Item>
+              <IconButton
+                aria-label="delete"
+                onClick={(_) => setOpenClientChooser(true)}
+                color="primary"
+              >
+                <PeopleIcon />
+              </IconButton>
+              {state.client && (
+                <div>
+                  <h3>{state.client.nom}</h3>
+                  <div>{state.client.solde}</div>
+                </div>
+              )}
+            </Item>
           </Stack>
         </Grid>
       </Grid>
+
+      {openClientChooser && (
+        <Dlg
+          title="test"
+          open={openClientChooser}
+          onClose={(_) => setOpenClientChooser(false)}
+        >
+          <Clients onSelect={selectClient} />
+        </Dlg>
+      )}
     </div>
   );
 }
@@ -162,6 +293,8 @@ const reducer = (state, { type, payload }) => {
   switch (type) {
     case "INIT":
       return payload;
+    case "SELECT_CLIENT":
+      return { ...state, client: payload, changed: true };
     case "ADD_ARTICLE":
       return addArticle(state, payload);
     default:
@@ -175,11 +308,13 @@ const addArticle = (state, article) => {
   if (exists) {
     return {
       ...state,
+      changed: true,
       lines: state.lines.map((e) => {
         if (e.id_article === article.id) {
           return {
             ...e,
-            qte: e.qte + article.qte,
+            qte: Number(e.qte) + Number(article.qte),
+            type: e.type === "OLD" ? "EDIT" : "NEW",
           };
         }
         return { ...e };
@@ -195,7 +330,9 @@ const addArticle = (state, article) => {
         designation: article.designation,
         prix: article.prix,
         qte: article.qte,
+        type: "NEW",
       },
     ],
+    changed: true,
   };
 };

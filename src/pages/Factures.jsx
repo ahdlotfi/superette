@@ -98,7 +98,7 @@ export default function Main() {
           onClose={(_) => setOpenDlg(false)}
         >
           <FActureEditor
-            id={currentId}
+            idFacture={currentId}
             onChange={(_) => {
               setOpenDlg(false);
               getData();

@@ -12,7 +12,7 @@ import React, { useEffect, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import Dlg from "../components/Dlg";
 
-export default function Clients() {
+export default function Clients({ onSelect }) {
   const [data, setData] = useState([]);
   const [openDlg, setOpenDlg] = useState(false);
 
@@ -33,13 +33,15 @@ export default function Clients() {
   return (
     <div>
       <h3>Liste des clients</h3>
-      <IconButton
-        color="secondary"
-        aria-label="add"
-        onClick={(_) => setOpenDlg(true)}
-      >
-        <AddIcon />
-      </IconButton>
+      {!onSelect && (
+        <IconButton
+          color="secondary"
+          aria-label="add"
+          onClick={(_) => setOpenDlg(true)}
+        >
+          <AddIcon />
+        </IconButton>
+      )}
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
@@ -54,6 +56,11 @@ export default function Clients() {
               <TableRow
                 key={row.id}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                onClick={(_) => {
+                  if (onSelect) {
+                    onSelect(row);
+                  }
+                }}
               >
                 <TableCell component="th" scope="row">
                   {row.id}
@@ -67,11 +74,9 @@ export default function Clients() {
       </TableContainer>
 
       {openDlg && (
-        <Dlg
-          title="test"
-          open={openDlg}
-          onClose={(_) => setOpenDlg(false)}
-        ></Dlg>
+        <Dlg title="test" open={openDlg} onClose={(_) => setOpenDlg(false)}>
+          <Clients />
+        </Dlg>
       )}
     </div>
   );
