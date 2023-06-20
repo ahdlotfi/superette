@@ -15,6 +15,8 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import PeopleIcon from "@mui/icons-material/People";
 import SaveIcon from "@mui/icons-material/Save";
+import LockIcon from "@mui/icons-material/Lock";
+import PrintIcon from "@mui/icons-material/Print";
 import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
@@ -23,6 +25,7 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import Dlg from "../components/Dlg";
 import Clients from "../pages/Clients";
+import FacturePrinter from "./FacturePrinter";
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
@@ -32,7 +35,7 @@ const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
-export default function FActureEditor({ idFacture }) {
+export default function FActureEditor({ idFacture, onChange }) {
   const [state, dispatch] = useReducer(reducer, {
     lines: [],
     id: 0,
@@ -41,6 +44,7 @@ export default function FActureEditor({ idFacture }) {
   const [qte, setQte] = useState(1);
   const [articles, setArticles] = useState([]);
   const [openClientChooser, setOpenClientChooser] = useState(false);
+  const [openPrinter, setOpenPrinter] = useState(false);
   const qteRef = useRef();
 
   useEffect(() => {
@@ -103,7 +107,7 @@ export default function FActureEditor({ idFacture }) {
     const commande = {
       id: state.id,
       id_client: state.client.id,
-      lignes: state.lines,
+      lignes: state.lines.filter((e) => e.type !== "OLD"),
     };
     console.log(commande);
     const res = await fetch("http://localhost:4000/factures/", {
@@ -127,6 +131,41 @@ export default function FActureEditor({ idFacture }) {
     loadFacture(id);
   };
 
+  const handleCloture = async (_) => {
+    const resp = window.confirm("Clôturer cette commande ?");
+    if (resp !== true) {
+      return;
+    }
+    const commande = {
+      operation: "CLOTURE",
+      id: state.id,
+      id_client: state.client.id,
+      lignes: state.lines.filter((e) => e.type !== "OLD"),
+    };
+    const res = await fetch("http://localhost:4000/factures/", {
+      method: "post",
+      mode: "cors",
+      config: {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(commande),
+    }).then((res) => res.json());
+    if (!res.success) {
+      alert(res.message);
+      return;
+    }
+    onChange();
+  };
+
+  const handlePrint = () => {
+    setOpenPrinter(true);
+  };
+
   return (
     <div
       style={{
@@ -139,47 +178,49 @@ export default function FActureEditor({ idFacture }) {
         <Grid item xs={12} sm={12} md={8}>
           <Stack spacing={2}>
             <Item style={{ minWidth: 350 }}>
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ minWidth: 320, mt: 1 }}>
-                  <FormControl fullWidth>
-                    <InputLabel id="demo-simple-select-label">
-                      Article
-                    </InputLabel>
-                    <Select
-                      labelId="demo-simple-select-label"
+              {state && state.etat !== "Clôturée" && (
+                <Stack direction="row" spacing={2}>
+                  <Box sx={{ minWidth: 320, mt: 1 }}>
+                    <FormControl fullWidth>
+                      <InputLabel id="demo-simple-select-label">
+                        Article
+                      </InputLabel>
+                      <Select
+                        labelId="demo-simple-select-label"
+                        margin="dense"
+                        size="small"
+                        value={article}
+                        label={article ? article.designation : ""}
+                        onChange={handleChange}
+                      >
+                        {articles.map((a) => (
+                          <MenuItem key={a.id} value={a}>
+                            {a.designation}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                  <Box style={{ minWidth: 150 }}>
+                    <TextField
+                      label="Qté"
+                      inputRef={qteRef}
+                      type="number"
                       margin="dense"
                       size="small"
-                      value={article}
-                      label={article ? article.designation : ""}
-                      onChange={handleChange}
-                    >
-                      {articles.map((a) => (
-                        <MenuItem key={a.id} value={a}>
-                          {a.designation}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-                <Box style={{ minWidth: 150 }}>
-                  <TextField
-                    label="Qté"
-                    inputRef={qteRef}
-                    type="number"
-                    margin="dense"
-                    size="small"
-                    value={qte}
-                    disabled={!article}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        addArticle();
-                      }
-                    }}
-                    onChange={(e) => setQte(e.target.value)}
-                    sx={{ m: 1, width: "25ch" }}
-                  />
-                </Box>
-              </Stack>
+                      value={qte}
+                      disabled={!article}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          addArticle();
+                        }
+                      }}
+                      onChange={(e) => setQte(e.target.value)}
+                      sx={{ m: 1, width: "25ch" }}
+                    />
+                  </Box>
+                </Stack>
+              )}
             </Item>
             <Item>
               <TableContainer component={Paper}>
@@ -255,6 +296,24 @@ export default function FActureEditor({ idFacture }) {
                 >
                   <SaveIcon />
                 </IconButton>
+                <IconButton
+                  aria-label="close"
+                  disabled={
+                    !state || state.changed || state.etat === "Clôturée"
+                  }
+                  onClick={handleCloture}
+                  color="secondary"
+                >
+                  <LockIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="print"
+                  disabled={state.etat !== "Clôturée"}
+                  onClick={handlePrint}
+                  color="secondary"
+                >
+                  <PrintIcon />
+                </IconButton>
               </div>
             </Item>
             <Item>
@@ -262,6 +321,7 @@ export default function FActureEditor({ idFacture }) {
                 aria-label="delete"
                 onClick={(_) => setOpenClientChooser(true)}
                 color="primary"
+                disabled={state.etat === "Clôturée"}
               >
                 <PeopleIcon />
               </IconButton>
@@ -283,6 +343,15 @@ export default function FActureEditor({ idFacture }) {
           onClose={(_) => setOpenClientChooser(false)}
         >
           <Clients onSelect={selectClient} />
+        </Dlg>
+      )}
+      {openPrinter && (
+        <Dlg
+          title="Impression"
+          open={openPrinter}
+          onClose={(_) => setOpenPrinter(false)}
+        >
+          <FacturePrinter facture={state} />
         </Dlg>
       )}
     </div>
@@ -326,6 +395,7 @@ const addArticle = (state, article) => {
     lines: [
       ...state.lines,
       {
+        id_facture: state.id,
         id_article: article.id,
         designation: article.designation,
         prix: article.prix,

@@ -61,6 +61,8 @@ export default function Main() {
               <TableCell>Date</TableCell>
               <TableCell>Client</TableCell>
               <TableCell align="right">Total</TableCell>
+              <TableCell align="center">Etat</TableCell>
+              <TableCell align="right"></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -75,6 +77,7 @@ export default function Main() {
                 <TableCell>{row.date}</TableCell>
                 <TableCell>{row.client}</TableCell>
                 <TableCell align="right">{row.total}</TableCell>
+                <TableCell align="center">{row.etat}</TableCell>
                 <TableCell align="right">
                   <IconButton
                     color="primary"
